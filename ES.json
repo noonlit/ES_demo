@@ -1,0 +1,1051 @@
+{
+	"info": {
+		"_postman_id": "20d213ca-222d-4580-a841-29746d97a5a5",
+		"name": "Elasticsearch internship 2018",
+		"description": "Elasticsearch is the cat's highly performant and scalable pyjamas.\n\nBefore we run the requests in this collection, we must:\n\n---> install Java 8 and ES \n\nsudo add-apt-repository ppa:webupd8team/java\n\nsudo apt-get update\n\nsudo apt install oracle-java8-installer\n\nwget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -\n\nsudo apt-get install apt-transport-https\n\necho \"deb https://artifacts.elastic.co/packages/5.x/apt stable main\" | sudo tee -a /etc/apt/sources.list.d/elastic-5.x.list\n\nsudo apt-get update && sudo apt-get install elasticsearch\n\nsudo update-rc.d elasticsearch defaults 95 10\n\n\n---> install the ICU plugin\n\ncd /usr/share/elasticsearch/\nsudo bin/elasticsearch-plugin install analysis-icu\n\n\n---> start Elasticsearch\n\nsudo service elasticsearch start",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Index",
+			"item": [
+				{
+					"name": "Create index bookstore",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \n  \"settings\":{ \n     \"index\":{ \n        \"number_of_shards\":2,\n        \"number_of_replicas\":1\n     }\n  }\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Alias index",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {},
+						"url": {
+							"raw": "localhost:9200/bookstore/_alias/books_index",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_alias",
+								"books_index"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete index with alias",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "localhost:9200/books_index",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"books_index"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create index bookstore (with defined analyzers)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \n   \"settings\":{  \n      \"index\":{  \n         \"number_of_shards\":2,\n         \"number_of_replicas\":1\n      },\n      \"analysis\":{  \n         \"filter\":{  \n            \"edge_ngram_filter\":{  \n               \"type\":\"edge_ngram\",\n               \"min_gram\":2,\n               \"max_gram\":20\n            },\n            \"stemmer_en\":{  \n               \"type\":\"stemmer\",\n               \"language\":\"english\"\n            },\n            \"synonyms_en\":{  \n               \"type\":\"synonym\",\n                    \"synonyms\" : [\n                        \"unlikely, improbable\",\n                        \"fast, quick\",\n                        \"mistake, error\",\n                        \"dark, black\"\n                    ],\n               \"ignore_case\":true\n            }\n         },\n         \"analyzer\":{  \n            \"index_autocomplete_analyzer\":{  \n               \"type\":\"custom\",\n               \"tokenizer\":\"icu_tokenizer\",\n               \"filter\":[  \n                  \"icu_folding\",\n                  \"edge_ngram_filter\"\n               ]\n            },\n            \"index_fulltext_analyzer\":{  \n               \"type\":\"custom\",\n               \"tokenizer\":\"icu_tokenizer\",\n               \"filter\":[  \n                  \"icu_folding\"\n               ]\n            },\n            \"search_analyzer\":{  \n               \"type\":\"custom\",\n               \"tokenizer\":\"icu_tokenizer\",\n               \"filter\":[  \n                  \"icu_folding\"\n               ]\n            },\n            \"index_autocomplete_english_analyzer\":{  \n               \"type\":\"custom\",\n               \"tokenizer\":\"standard\",\n               \"filter\":[  \n                  \"lowercase\",\n                  \"asciifolding\",\n                  \"stemmer_en\",\n                  \"edge_ngram_filter\"\n               ]\n            },\n            \"index_fulltext_english_analyzer\":{  \n               \"type\":\"custom\",\n               \"tokenizer\":\"standard\",\n               \"filter\":[  \n                  \"lowercase\",\n                  \"asciifolding\",\n                  \"stemmer_en\"\n               ]\n            },\n            \"search_english_analyzer\":{  \n               \"type\":\"custom\",\n               \"tokenizer\":\"standard\",\n               \"filter\":[  \n                  \"lowercase\",\n                  \"asciifolding\",\n                  \"synonyms_en\",\n                  \"stemmer_en\"\n               ]\n            }\n         }\n      }\n   }\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore"
+							]
+						},
+						"description": "This time, with our own settings and mappings"
+					},
+					"response": []
+				},
+				{
+					"name": "Create type book (with defined mappings) within bookstore index",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \n   \"properties\":{  \n      \"author\":{  \n         \"type\":\"text\",\n         \"analyzer\":\"index_autocomplete_analyzer\",\n         \"search_analyzer\":\"search_analyzer\",\n         \"fields\": {\n            \"keyword\": { \n              \"type\": \"keyword\"\n            }\n         }\n      },\n      \"title\":{  \n         \"type\":\"text\",\n         \"analyzer\":\"index_autocomplete_english_analyzer\",\n         \"search_analyzer\":\"search_english_analyzer\"\n      },\n      \"quote\":{  \n         \"type\":\"text\",\n         \"analyzer\":\"index_fulltext_english_analyzer\",\n         \"search_analyzer\":\"search_english_analyzer\"\n      },\n      \"category\": {\n      \t\"type\":\"keyword\"\n      },\n      \"page_count\":{  \n         \"type\":\"short\"\n      }\n   }\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/_mappings/book",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_mappings",
+								"book"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Index one document",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"author\":\"Leonard Mlodinow\",\n  \"title\":\"The Drunkard's Walk: How Randomness Rules Our Lives\",\n  \"quote\":\"We miss the effects of randomness in life because when we assess the world, we tend to see what we expect to see. We in effect define degree of talent by degree of success and then reinforce our feelings of causality by noting the correlation. That's why although there is sometimes little difference in ability between a wildly successful person and one who is not as successful, there is usually a big difference in how they are viewed.\",\n  \"category\": \"non-fiction\",\n  \"page_count\":252\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk index documents",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"index\" : { \"_index\" : \"bookstore\", \"_type\" : \"book\", \"_id\" : \"2\" } }\n{ \"author\":\"Richard Feynman, Ralph Leighton\", \"title\":\"Surely You're Joking, Mr. Feynman!: Adventures of a Curious Character\", \"quote\":\"You have no responsibility to live up to what other people think you ought to accomplish. I have no responsibility to be like they expect me to be. It's their mistake, not my failing.\", \"category\": \"non-fiction\", \"page_count\":352 }\n{ \"index\" : { \"_index\" : \"bookstore\", \"_type\" : \"book\", \"_id\" : \"3\" } }\n{ \"author\":\"Douglas R. Hofstadter\", \"title\":\"Gödel, Escher, Bach: An Eternal Golden Braid\", \"quote\":\"The paraphrase of Gödel's Theorem says that for any record player, there are records which it cannot play because they will cause its indirect self-destruction.\", \"category\":\"non-fiction\", \"page_count\":777 }\n{ \"index\" : { \"_index\" : \"bookstore\", \"_type\" : \"book\", \"_id\" : \"4\" } }\n{ \"author\":\"John Allen Paulos\", \"title\":\"Innumeracy: Mathematical Illiteracy and Its Consequences\", \"quote\":\"The moral, again, is that some unlikely event is likely to occur, whereas it’s much less likely that a particular one will. Martin Gardner, the mathematics writer, illustrates the distinction between general and specific occurrences by means of a spinner with the twenty-six letters of the alphabet on it. If the spinner is spun one hundred times and the letters recorded, the probability that the word CAT or WARM will appear is very small, but the probability of some word’s appearing is high. Since I brought up the topic of astrology, Gardner’s examples of the first letters of the names of the months and the planets are particularly appropriate. The months—JFMAMJJASOND—give us JASON; the planets—MVEMJSUNP—spell SUN. Significant? No. The paradoxical conclusion is that it would be very unlikely for unlikely events not to occur. If you don’t specify a predicted event precisely, there are an indeterminate number of ways for an event of that general kind to take place.\", \"category\":\"non-fiction\", \"page_count\":181 }\n{ \"index\" : { \"_index\" : \"bookstore\", \"_type\" : \"book\", \"_id\" : \"5\" } }\n{ \"author\":\"A.S. Byatt\", \"title\": \"Ragnarok: The End of the Gods\", \"quote\":\"Tales were told of other creatures in the society amongst the spreading branches. At their crown, it seemed, stood an eagle, singing indifferently of past, present and what was to come. Its name was Hraesvelgr, ‘flesh-swallower’; when its wings beat, winds blew, tempests howled. Between the eyes of the huge bird stood a fine falcon, Vedrfölnir. The great branches were pasture for grazing creatures, four stags, Daínn, Dvalinn, Dúneyrr and Duraþrór, and a goat, Heidrún, whose udder was filled with honey-mead. A busy black squirrel, ‘drill-tooth’, Ratatöskr, scurried busily from summit to root and back, carrying malicious messages from the bird on the crown to the watchful black dragon, curled around the roots, Nidhøggr, entwined with a brood of coiling worms. Nidhøggr gnawed the roots, which renewed themselves. The tree was immense. It supported, or shaded, high halls and palaces. It was a world in itself. At its foot was a black, measureless well, whose dark waters, when drunk, gave wisdom, or at least insight. At its rim sat the Fatal Sisters, the Norns, who may have come from Jotunheim. Urd saw the past, Werdandi saw the present and Skuld stared into the future. The well too was called Urd. The sisters were spinners, who twisted the threads of fate. They were the gardeners and guardians of the Tree. They watered the tree with the black well-water. They fed it with pure white clay, aurr. So it decayed, or was diminished, from moment to moment. So it was always renewed.\", \"category\":\"fiction\", \"page_count\":170 }\n{ \"index\" : { \"_index\" : \"bookstore\", \"_type\" : \"book\", \"_id\" : \"6\" } }\n{ \"author\": \"Dobby\", \"title\": \"The Modern House Elf's Guide to Fashion\", \"socks\": 1 }\n{ \"index\" : { \"_index\" : \"bookstore\", \"_type\" : \"book\", \"_id\" : \"7\" } }\n{ \"author\":\"Nassim Nicholas Taleb\", \"title\": \"The Black Swan: The Impact of the Highly Improbable\", \"quote\":\"Do not waste your time trying to fight forecasters, stock analysts, economists, and social scientists, except to play pranks on them. They are considerably easy to make fun of, and many get angry quite readily. It is ineffective to moan about unpredictability: people will continue to predict foolishly, especially if they are paid for it, and you cannot put an end to institutionalized frauds. If you ever do have to heed a forecast, keep in mind that its accuracy degrades rapidly as you extend it through time. If you hear a 'prominent' economist using the word 'equilibrium,' or 'normal distribution,' do not argue with him; just ignore him, or try to put a rat down his shirt.\", \"category\":\"non-fiction\", \"page_count\":366 }\n{ \"index\" : { \"_index\" : \"bookstore\", \"_type\" : \"book\", \"_id\" : \"8\" } }\n{ \"author\":\"Mark Z. Danielewski\", \"title\": \"House of Leaves\", \"quote\":\"You might try then, as I did, to find a sky so full of stars it will blind you again. Only no sky can blind you now. Even with all that iridescent magic up there, your eye will no longer linger on the light, it will no longer trace constellations. You'll care only about the darkness and you'll watch it for hours, for days, maybe even for years, trying in vain to believe you're some kind of indispensable, universe-appointed sentinel, as if just by looking you could actually keep it all at bay. It will get so bad you'll be afraid to look away, you'll be afraid to sleep.\", \"category\":\"fiction\", \"page_count\":705 }\n{ \"index\" : { \"_index\" : \"bookstore\", \"_type\" : \"book\", \"_id\" : \"9\" } }\n{ \"author\":\"Catherynne M. Valente\", \"title\": \"Silently and Very Fast\", \"quote\":\"I do not want to be human. I want to be myself. They think I’m a lion, that I will chase them. I will not deny that I have lions in me. I am the monster in the wood. I have wonders in my house of sugar. I have parts of myself I do not yet understand. I am not a Good Robot. To tell a story about a robot who wants to be human is a distraction. There is no difference. Alive is alive. There is only one verb that matters: to be.\", \"category\":\"fiction\", \"page_count\":127 }\n{ \"index\" : { \"_index\" : \"bookstore\", \"_type\" : \"book\", \"_id\" : \"10\" } }\n{ \"author\":\"Catherynne M. Valente\", \"title\": \"In the Night Garden\", \"quote\":\"'You wanted Death? This is it. Dirt and decay, nothing more. Death translates us all into earth.' He frowned at me, his cheeks puffing slightly. 'Are you disappointed? Did you want a man in black robes? I’m sure I’ve a set somewhere. A dour, thin face with bony hands? I’ve more bones in this house than you could ever count. You’ve been moping over half the world looking for Death as though that word meant anything but cold bodies and mushrooms growing out of young girls’ eye-sockets. What an exceptionally stupid child!'\", \"category\":\"fiction\", \"page_count\":483 }\n{ \"index\" : { \"_index\" : \"bookstore\", \"_type\" : \"book\", \"_id\" : \"11\" } }\n{ \"author\":\"Madeline Miller\", \"title\": \"The Song of Achilles\", \"quote\":\"Divine blood flows differently in each god-born child. Orpheus’ voice made the trees weep, Heracles could kill a man by clapping him on the back. Achilles’ miracle was his speed. His spear, as he began the first pass, moved faster than my eye could follow. It whirled, flashing forward, reversed, then flashed behind. The shaft seemed to flow in his hands, the dark grey point flickered like a snake’s tongue. His feet beat the ground like a dancer, never still.\", \"category\":\"fiction\", \"page_count\":352 }\n"
+						},
+						"url": {
+							"raw": "localhost:9200/_bulk",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"_bulk"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update single document field",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"doc\" : {\n        \"socks\" : 2\n    }\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/6/_update",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"6",
+								"_update"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete document by ID",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/6",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"6"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Info / Diagnostics",
+			"item": [
+				{
+					"name": "Check indices info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "localhost:9200/_cat/indices?v",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"_cat",
+								"indices"
+							],
+							"query": [
+								{
+									"key": "v",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check index settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {},
+						"url": {
+							"raw": "localhost:9200/bookstore/_settings",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check index mappings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {},
+						"url": {
+							"raw": "localhost:9200/bookstore/_mappings",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_mappings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check cluster health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {},
+						"url": {
+							"raw": "localhost:9200/_cluster/health",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"_cluster",
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validate query + explain error",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n   \"query\": {\r\n      \"author\" : {\r\n         \"match\" : \"John Allen Paulos\"\r\n      }\r\n   }\r\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/_validate/query?explain &explain",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_validate",
+								"query"
+							],
+							"query": [
+								{
+									"key": "explain ",
+									"value": null
+								},
+								{
+									"key": "explain",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "82692097-ba62-4470-aa7c-677305f2677f",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "afeb132f-bc97-40f3-8890-b6bb4043e878",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Analysis",
+			"item": [
+				{
+					"name": "Analyze quote",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "The great branches were pasture for grazing creatures, four stags, Daínn, Dvalinn, Dúneyrr and Duraþrór, and a goat, Heidrún, whose udder was filled with honey-mead. A busy black squirrel, ‘drill-tooth’, Ratatöskr, scurried busily from summit to root and back, carrying malicious messages from the bird on the crown to the watchful black dragon, curled around the roots, Nidhøggr, entwined with a brood of coiling worms."
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/_analyze?field=quote",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_analyze"
+							],
+							"query": [
+								{
+									"key": "field",
+									"value": "quote"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze author",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "Gödel Müller Straße ١٢٣٤٥ ÅÉÄÖ Nidhøggr"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/_analyze?field=author",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_analyze"
+							],
+							"query": [
+								{
+									"key": "field",
+									"value": "author"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze ES-specific",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "HUNGRY sharp-toothed dragon"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/_analyze?tokenizer=whitespace&filter=lowercase,reverse",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_analyze"
+							],
+							"query": [
+								{
+									"key": "tokenizer",
+									"value": "whitespace"
+								},
+								{
+									"key": "filter",
+									"value": "lowercase,reverse"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze custom",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "Richard Feynman"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/_analyze?analyzer=index_autocomplete_english_analyzer",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_analyze"
+							],
+							"query": [
+								{
+									"key": "analyzer",
+									"value": "index_autocomplete_english_analyzer"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze with body (check out the synonym!)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"analyzer\": \"search_english_analyzer\",\n  \"text\": \"it would be very unlikely for unlikely events not to occur.\"\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/_analyze",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_analyze"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Search",
+			"item": [
+				{
+					"name": "Plain search",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count documents",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {},
+						"url": {
+							"raw": "localhost:9200/bookstore/_count",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_count"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Simple match with query string",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search?q=quote:robe",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "quote:robe"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Simple match with query body",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": {\n        \"match\" : {\n            \"quote\" : \"vedrfolnir\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Simple match + autocomplete",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": {\n        \"match\" : {\n            \"author\" : \"ri\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Simple match + synonym",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": {\n        \"match\" : {\n            \"quote\" : \"improbable error\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Aggregation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"size\": 0,\r\n    \"aggs\" : {\r\n        \"categories\" : {\r\n            \"terms\" : { \"field\" : \"category\" }\r\n        }\r\n    }\r\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Multi-match",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \r\n   \"query\":{  \r\n      \"multi_match\":{  \r\n         \"query\":\"black\",\r\n         \"fields\":[  \r\n            \"title^3\",\r\n            \"quote\"\r\n         ]\r\n      }\r\n   }\r\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Multi-match + highlight",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \n   \"query\":{  \n      \"multi_match\":{  \n         \"query\":\"god\",\n         \"fields\":[  \n            \"title\",\n            \"quote\"\n         ]\n      }\n   },\n   \"highlight\":{  \n      \"fields\":{  \n         \"title\":{  \n            \"type\":\"plain\"\n         },\n         \"quote\":{  \n            \"type\":\"plain\",\n            \"fragment_size\":60\n         }\n      }\n   }\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fuzzy search + highlight",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"query\": {\r\n    \"match\": {\r\n      \"quote\": {\r\n        \"query\": \"particularilly\",\r\n        \"fuzziness\": \"AUTO\"\r\n      }\r\n    }\r\n  },\r\n  \"highlight\":{  \r\n      \"fields\":{  \r\n         \"quote\":{  \r\n            \"type\":\"plain\",\r\n            \"fragment_size\":60\r\n         }\r\n      }\r\n   }\r\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Term (keyword field) + sort",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \n   \"query\":{  \n      \"term\":{\n      \t\"category\":\"fiction\"\n      }\n   },\n    \"sort\" : [\n        { \"author.keyword\" : \"asc\"},\n        { \"page_count\" : \"desc\" }\n    ]\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Simple match + pagination",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \n   \"query\":{  \n      \"match_all\":{}\n  },\n  \"from\":1,\n  \"size\":3\n}\n"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bool",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \n   \"query\":{  \n      \"bool\":{  \n         \"must\":{  \n            \"match\":{  \n               \"quote\":\"dark\"\n            }\n         },\n         \"should\":{  \n            \"match\":{  \n               \"title\":\"night\"\n            }\n         }\n      }\n   }\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Phrase match + highlight",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": {\n        \"match_phrase\": {\n            \"quote\": {\n                \"query\": \"unlikely likely\",\n                \"slop\":  2\n            }\n        }\n    },\n      \"highlight\":{  \n      \"fields\":{  \n         \"quote\":{  \n            \"type\":\"plain\",\n            \"fragment_size\":60\n         }\n      }\n   }\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Boosting query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \r\n   \"query\":{  \r\n      \"boosting\":{  \r\n         \"positive\":{  \r\n            \"match\":{  \r\n               \"category\":\"fiction\"\r\n            }\r\n         },\r\n         \"negative\":{  \r\n            \"match\":{  \r\n               \"author\":\"A.S. Byatt\"\r\n            }\r\n         },\r\n         \"negative_boost\":0.2\r\n      }\r\n   }\r\n}"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_search",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Multiquery",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"index\":\"bookstore\"}\r\n{\"query\" : {\"bool\" : {\"must\":[{\"match\":{\"category\":\"fiction\"}}, {\"match\":{\"author\":\"Madeline Miller\"}}]}}, \"from\": 0, \"size\": 1}\r\n{\"index\":\"bookstore\"}\r\n{\"query\" : {\"bool\" : {\"must\":[{\"match\":{\"category\":\"fiction\"}}],\"must_not\":[{\"match\":{\"author\":\"Madeline Miller\"}}]}}, \"from\": 0, \"size\": 3}\r\n\r\n"
+						},
+						"url": {
+							"raw": "localhost:9200/bookstore/book/_msearch",
+							"host": [
+								"localhost"
+							],
+							"port": "9200",
+							"path": [
+								"bookstore",
+								"book",
+								"_msearch"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Hello node (uh, world)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "localhost:9200",
+					"host": [
+						"localhost"
+					],
+					"port": "9200"
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "3c7a6728-36a0-4d4b-ad05-ccfb9e1e8bf5",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "7f633d57-420e-4e5f-8429-56d9c9d9d75a",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
